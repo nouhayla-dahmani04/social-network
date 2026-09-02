@@ -25,13 +25,13 @@ public class PostService {
     private final PostAllowedViewerRepository allowedViewerRepository;
 
     public PostService(PostRepository postRepository,
-                        FollowRepository followRepository,
-                        PostAllowedViewerRepository allowedViewerRepository) {
+            FollowRepository followRepository,
+            PostAllowedViewerRepository allowedViewerRepository) {
         this.postRepository = postRepository;
         this.followRepository = followRepository;
         this.allowedViewerRepository = allowedViewerRepository;
     }
-    
+
     public List<PostResponse> getUserPosts(String userId, User currentUser) {
 
         List<Post> allPosts = postRepository.findByAuthorIdOrderByCreatedAtDesc(userId);
@@ -113,6 +113,10 @@ public class PostService {
 
         if (req.getImageUrl() != null) {
             post.setImageUrl(req.getImageUrl());
+        }
+
+        if (req.getPrivacy() != null && req.getPrivacy() != PostPrivacy.PRIVATE) {
+            allowedViewerRepository.deleteByPostId(post.getId()); 
         }
 
         if (req.getPrivacy() != null) {
