@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:sqlite:/data/social-network.db
+    url: jdbc:sqlite:./data/social-network.db
     driver-class-name: org.sqlite.JDBC
   jpa:
     hibernate:
