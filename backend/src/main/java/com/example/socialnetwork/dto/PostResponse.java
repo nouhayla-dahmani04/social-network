@@ -24,5 +24,9 @@ public class PostResponse {
 
     private String authorAvatarUrl;
 
+    private long likesCount;
+    
+    private boolean likedByMe;
+
     private String createdAt;
 }

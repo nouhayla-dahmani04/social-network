@@ -8,6 +8,7 @@ import com.example.socialnetwork.entity.PostAllowedViewer;
 import com.example.socialnetwork.entity.PostPrivacy;
 import com.example.socialnetwork.entity.User;
 import com.example.socialnetwork.repository.FollowRepository;
+import com.example.socialnetwork.repository.LikeRepository;
 import com.example.socialnetwork.repository.PostAllowedViewerRepository;
 import com.example.socialnetwork.repository.PostRepository;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,13 +24,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final FollowRepository followRepository;
     private final PostAllowedViewerRepository allowedViewerRepository;
+    private final LikeRepository likeRepository;
 
     public PostService(PostRepository postRepository,
             FollowRepository followRepository,
-            PostAllowedViewerRepository allowedViewerRepository) {
+            PostAllowedViewerRepository allowedViewerRepository, LikeRepository likeRepository) {
         this.postRepository = postRepository;
         this.followRepository = followRepository;
         this.allowedViewerRepository = allowedViewerRepository;
+        this.likeRepository = likeRepository;
     }
 
     public List<PostResponse> getUserPosts(String userId, User currentUser) {
@@ -39,7 +42,7 @@ public class PostService {
 
         for (Post post : allPosts) {
             if (canViewPost(post, currentUser)) {
-                visiblePosts.add(toResponse(post));
+                visiblePosts.add(toResponse(post, currentUser));
             }
         }
 
@@ -93,7 +96,7 @@ public class PostService {
         saveAllowedViewers(post, req.getPrivacy(), req.getAllowedViewerIds());
 
         Post savedPost = postRepository.findById(post.getId()).orElseThrow();
-        return toResponse(savedPost);
+        return toResponse(savedPost, currentUser);
     }
 
     // Modifie un post existant. Seul l'auteur du post a le droit de le faire.
@@ -116,7 +119,7 @@ public class PostService {
         }
 
         if (req.getPrivacy() != null && req.getPrivacy() != PostPrivacy.PRIVATE) {
-            allowedViewerRepository.deleteByPostId(post.getId()); 
+            allowedViewerRepository.deleteByPostId(post.getId());
         }
 
         if (req.getPrivacy() != null) {
@@ -132,7 +135,7 @@ public class PostService {
             saveAllowedViewers(post, req.getPrivacy(), req.getAllowedViewerIds());
         }
 
-        return toResponse(post);
+        return toResponse(post, currentUser);
     }
 
     // Supprime un post. Seul l'auteur du post a le droit de le faire.
@@ -166,7 +169,7 @@ public class PostService {
         }
     }
 
-    private PostResponse toResponse(Post post) {
+    private PostResponse toResponse(Post post, User currentUser) {
         PostResponse response = new PostResponse();
         response.setId(post.getId());
         response.setContent(post.getContent());
@@ -177,6 +180,9 @@ public class PostService {
         response.setAuthorFirstName(post.getAuthor().getFirstName());
         response.setAuthorLastName(post.getAuthor().getLastName());
         response.setAuthorAvatarUrl(post.getAuthor().getAvatarUrl());
+        response.setLikesCount(likeRepository.countByPostId(post.getId()));
+        response.setLikedByMe(likeRepository.findByPostIdAndUserId(post.getId(), currentUser.getId()).isPresent());
+
         return response;
     }
 }
