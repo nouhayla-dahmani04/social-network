@@ -3,6 +3,8 @@ package com.example.socialnetwork.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.Instant;
 import java.util.UUID;
 
 // Cette classe représente une ligne de la table "follows"
@@ -24,6 +26,6 @@ public class Follow {
     @Column(nullable = false)
     private String status = "pending"; // "pending" ou "accepted"
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private String createdAt;
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private String createdAt = Instant.now().toString();
 }

@@ -71,11 +71,11 @@ public class CommentService {
 
         comment = commentRepository.save(comment);
 
-        // On recharge depuis la base pour récupérer created_at,
-        // généré automatiquement par SQLite
-        Comment savedComment = commentRepository.findById(comment.getId()).orElseThrow();
+        // // On recharge depuis la base pour récupérer created_at,
+        // // généré automatiquement par SQLite
+        // Comment savedComment = commentRepository.findById(comment.getId()).orElseThrow();
 
-        return toResponse(savedComment);
+        return toResponse(comment);
     }
 
     // Modifie un commentaire existant. Seul son auteur a le droit de le faire.

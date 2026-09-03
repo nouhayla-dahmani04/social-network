@@ -3,9 +3,10 @@ package com.example.socialnetwork.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.Instant;
 import java.util.UUID;
 
-// Cette classe représente une ligne de la table "comments"
 @Entity
 @Table(name = "comments")
 @Getter @Setter
@@ -28,6 +29,6 @@ public class Comment {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private String createdAt;
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private String createdAt = Instant.now().toString();
 }

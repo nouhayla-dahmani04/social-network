@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "posts")
-@Getter @Setter
+@Getter
+@Setter
 public class Post {
 
     @Id
@@ -31,6 +33,6 @@ public class Post {
     @Column(nullable = false)
     private PostPrivacy privacy = PostPrivacy.PUBLIC;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private String createdAt;
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private String createdAt = Instant.now().toString();
 }
