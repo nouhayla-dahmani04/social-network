@@ -7,24 +7,29 @@ import lombok.Setter;
 import java.time.Instant;
 import java.util.UUID;
 
-// Cette classe représente une ligne de la table "follows"
-// Elle dit : "follower_id suit followee_id, avec un statut (pending/accepted)"
 @Entity
 @Table(name = "follows")
-@Getter @Setter
+@Getter
+@Setter
+
 public class Follow {
 
     @Id
     private String id = UUID.randomUUID().toString();
 
-    @Column(name = "follower_id", nullable = false)
-    private String followerId; // celui qui suit
+    // L'utilisateur qui fait le follow
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "follower_id", nullable = false)
+    private User follower;
 
-    @Column(name = "followee_id", nullable = false)
-    private String followeeId; // celui qui est suivi
+    // L'utilisateur qui est suivi
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "followee_id", nullable = false)
+    private User followee;
 
+    // "pending" (demande envoyée, profil privé) ou "accepted" (suivi validé)
     @Column(nullable = false)
-    private String status = "pending"; // "pending" ou "accepted"
+    private String status = "pending";
 
     @Column(name = "created_at", updatable = false, nullable = false)
     private String createdAt = Instant.now().toString();

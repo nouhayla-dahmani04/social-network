@@ -31,7 +31,7 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             await register(formData);
-            router.push("/profil-test");
+            router.push("/");
         } catch (err) {
             setError((err as Error).message);
         } finally {

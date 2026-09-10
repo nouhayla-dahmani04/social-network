@@ -19,7 +19,7 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await login(email, password);
-            router.push("/profil-test");
+            router.push("/");
         } catch (err) {
             setError((err as Error).message);
         } finally {

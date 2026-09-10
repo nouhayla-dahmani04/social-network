@@ -4,8 +4,8 @@ import com.example.socialnetwork.entity.Like;
 import com.example.socialnetwork.entity.User;
 import com.example.socialnetwork.repository.LikeRepository;
 import com.example.socialnetwork.repository.PostRepository;
+import com.example.socialnetwork.security.CurrentUserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -16,19 +16,21 @@ public class LikeController {
 
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
+    private final CurrentUserService currentUserService;
 
-    public LikeController(LikeRepository likeRepository, PostRepository postRepository) {
+    public LikeController(LikeRepository likeRepository,
+                          PostRepository postRepository,
+                          CurrentUserService currentUserService) {
         this.likeRepository = likeRepository;
         this.postRepository = postRepository;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping("/{postId}/like")
-    public ResponseEntity<Void> toggleLike(
-            @PathVariable String postId,
-            @AuthenticationPrincipal User currentUser
-    ) {
+    public ResponseEntity<Void> toggleLike(@PathVariable String postId) {
         postRepository.findById(postId).orElseThrow(() -> new NoSuchElementException("Post introuvable"));
-        
+
+        User currentUser = currentUserService.getCurrentUser();
         Optional<Like> existingLike = likeRepository.findByPostIdAndUserId(postId, currentUser.getId());
 
         if (existingLike.isPresent()) {
