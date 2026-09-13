@@ -8,6 +8,8 @@ import { copyToClipboard } from "@/lib/clipboard";
 import Avatar from "./Avatar";
 import CommentSection from "./CommentSection";
 
+import { Globe2, Users, Lock, Heart, MessageCircle, Share2 } from "lucide-react";
+
 type PostCardProps = {
     post: Post;
     onDeleted?: (id: string) => void;
@@ -181,17 +183,17 @@ export default function PostCard({ post, onDeleted, onUpdated }: PostCardProps) 
                 <button
                     onClick={handleLike}
                     disabled={liking}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition ${
-                        liked ? "text-rose-500 hover:bg-rose-50" : "text-slate-600 hover:bg-slate-100"
-                    }`}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition ${liked ? "text-rose-500 hover:bg-rose-50" : "text-slate-600 hover:bg-slate-100"
+                        }`}
                 >
-                    <span>{liked ? "❤️" : "🤍"}</span> J&apos;aime
+                    <span>{liked ? <Heart size={18} className="fill-rose-500 text-rose-500" /> : <Heart size={18} />}
+                    </span> J&apos;aime
                 </button>
                 <button
                     onClick={() => setShowComments((v) => !v)}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
                 >
-                    <span>💬</span> Commenter
+                    <MessageCircle size={18} /> Commenter
                 </button>
                 <button
                     onClick={async () => {
@@ -204,7 +206,7 @@ export default function PostCard({ post, onDeleted, onUpdated }: PostCardProps) 
                     }}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
                 >
-                    <span>📤</span> {shared ? "Lien copié !" : "Partager"}
+                    <Share2 size={18} /> {shared ? "Lien copié !" : "Partager"}
                 </button>
             </div>
 

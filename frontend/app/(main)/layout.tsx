@@ -8,11 +8,14 @@ import Sidebar from "@/components/Sidebar";
 import RightPanel from "@/components/RightPanel";
 import Avatar from "@/components/Avatar";
 
-const MOBILE_NAV = [
-    { href: "/", label: "Accueil", icon: "🏠" },
-    { href: "/groups", label: "Groupes", icon: "👥" },
-    { href: "/messages", label: "Messages", icon: "💬" },
-    { href: "/notifications", label: "Alertes", icon: "🔔" },
+import { Home, User, Users, MessageCircle, Bell, LogOut, Sparkles } from "lucide-react";
+
+const NAV_ITEMS = [
+    { href: "/", label: "Fil d'actualité", icon: Home },
+    { href: "/profile/me", label: "Mon profil", icon: User },
+    { href: "/groups", label: "Groupes", icon: Users },
+    { href: "/messages", label: "Messages", icon: MessageCircle },
+    { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -48,18 +51,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <Avatar firstName={user.firstName} lastName={user.lastName} src={user.avatarUrl} size={36} online />
                     </Link>
                 </div>
-                <nav className="flex items-center gap-1 overflow-x-auto px-2 pb-2">
-                    {MOBILE_NAV.map((item) => {
-                        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                <nav className="flex-1 space-y-1">
+                    {NAV_ITEMS.map((item) => {
+                        const Icon = item.icon;
+                        const active =
+                            item.href === "/"
+                                ? pathname === "/"
+                                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                                    active ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"
-                                }`}
+                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                    }`}
                             >
-                                <span>{item.icon}</span>
+                                <Icon size={18} />
                                 {item.label}
                             </Link>
                         );

@@ -10,6 +10,8 @@ import PostCard from "@/components/PostCard";
 import PostComposer from "@/components/PostComposer";
 import Avatar from "@/components/Avatar";
 
+import { FileText, Pencil, MessageCircle, Mail, Cake, Lock } from "lucide-react";
+
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const userId = resolvedParams.id;
@@ -65,7 +67,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                     profileApi
                         .getPendingRequests()
                         .then((reqs) => active && setPendingRequestsCount(reqs.length))
-                        .catch(() => {});
+                        .catch(() => { });
                 }
             } catch (err) {
                 if (active) {
@@ -201,7 +203,13 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                         onClick={() => setIsEditing(!isEditing)}
                                         className="rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                                     >
-                                        {isEditing ? "Annuler" : "✏️ Modifier le profil"}
+                                        {isEditing ? (
+                                            "Annuler"
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <Pencil size={14} /> Modifier le profil
+                                            </span>
+                                        )}
                                     </button>
                                 </>
                             ) : (
@@ -213,17 +221,17 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                             setProfile((prev) =>
                                                 prev
                                                     ? {
-                                                          ...prev,
-                                                          followStatus: newStatus,
-                                                          followersCount: prev.followersCount + delta,
-                                                          canViewContent: prev.isPublic || newStatus === "ACCEPTED",
-                                                      }
+                                                        ...prev,
+                                                        followStatus: newStatus,
+                                                        followersCount: prev.followersCount + delta,
+                                                        canViewContent: prev.isPublic || newStatus === "ACCEPTED",
+                                                    }
                                                     : prev
                                             );
                                         }}
                                     />
-                                    <button className="rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                                        💬 Message
+                                    <button className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                        <MessageCircle size={16} /> Message
                                     </button>
                                 </>
                             )}
@@ -305,14 +313,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                 <button
                                     type="button"
                                     onClick={() => setEditForm({ ...editForm, isPublic: !editForm.isPublic })}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                        editForm.isPublic ? "bg-indigo-600" : "bg-slate-300"
-                                    }`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isPublic ? "bg-indigo-600" : "bg-slate-300"
+                                        }`}
                                 >
                                     <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                            editForm.isPublic ? "translate-x-6" : "translate-x-1"
-                                        }`}
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.isPublic ? "translate-x-6" : "translate-x-1"
+                                            }`}
                                     />
                                 </button>
                             </div>
@@ -342,9 +348,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                         {profile.firstName} {profile.lastName}
                                     </h1>
                                     <span
-                                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                            profile.isPublic ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"
-                                        }`}
+                                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${profile.isPublic ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"
+                                            }`}
                                     >
                                         {profile.isPublic ? "Public" : "Privé"}
                                     </span>
@@ -358,8 +363,16 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
 
                             {profile.canViewContent && (
                                 <div className="flex flex-wrap gap-4 pt-1 text-xs text-slate-500">
-                                    {profile.email && <span>✉️ {profile.email}</span>}
-                                    {profile.dateOfBirth && <span>🎂 Né(e) le {profile.dateOfBirth}</span>}
+                                    {profile.email && (
+                                        <span className="inline-flex items-center gap-1">
+                                            <Mail size={14} /> {profile.email}
+                                        </span>
+                                    )}
+                                    {profile.dateOfBirth && (
+                                        <span className="inline-flex items-center gap-1">
+                                            <Cake size={14} /> Né(e) le {profile.dateOfBirth}
+                                        </span>
+                                    )}
                                 </div>
                             )}
 
@@ -398,7 +411,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                         </div>
                     ) : posts.length === 0 ? (
                         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                            <p className="text-3xl">📝</p>
+                            <FileText size={32} className="mx-auto text-slate-300" />
                             <p className="mt-2 text-sm font-medium text-slate-700">Aucune publication pour le moment.</p>
                         </div>
                     ) : (
@@ -416,7 +429,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 </section>
             ) : (
                 <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                    <p className="text-3xl">🔒</p>
+                    <Lock size={32} className="mx-auto text-slate-300" />
                     <h3 className="mt-2 text-base font-semibold text-slate-900">Ce compte est privé</h3>
                     <p className="mx-auto max-w-sm text-sm text-slate-500">
                         Suivez cet utilisateur pour voir ses publications et ses informations complètes.

@@ -5,6 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Post, PostPrivacy, postsApi } from "@/lib/postsApi";
 import Avatar from "./Avatar";
 
+import {ImagePlus, Smile} from "lucide-react";
+
 type PostComposerProps = {
     onCreated: (post: Post) => void;
 };
@@ -94,7 +96,7 @@ export default function PostComposer({ onCreated }: PostComposerProps) {
                             showImage ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-100"
                         }`}
                     >
-                        📷 Photo
+                        <ImagePlus size={16} />
                     </button>
                     <button
                         type="button"
@@ -103,7 +105,7 @@ export default function PostComposer({ onCreated }: PostComposerProps) {
                             showMoods ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-100"
                         }`}
                     >
-                        😊 Humeur
+                        <Smile size={16} className="inline mr-1" /> Humeur
                     </button>
                     <select
                         value={privacy}
