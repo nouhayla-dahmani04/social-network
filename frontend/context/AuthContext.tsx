@@ -23,6 +23,7 @@ export type RegisterData = {
     lastName: string;
     dateOfBirth: string;
     avatarUrl?: string;
+    avatarFile?: File;
     nickname?: string;
     aboutMe?: string;
 };
@@ -57,10 +58,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function register(data: RegisterData) {
-        const u = await apiFetch<User>("/api/auth/register", {
-            method: "POST",
-            body: JSON.stringify(data),
-        });
+        let u: User;
+        if (data.avatarFile) {
+            const formData = new FormData();
+            formData.append("email", data.email);
+            formData.append("password", data.password);
+            formData.append("firstName", data.firstName);
+            formData.append("lastName", data.lastName);
+            formData.append("dateOfBirth", data.dateOfBirth);
+            if (data.nickname) formData.append("nickname", data.nickname);
+            if (data.aboutMe) formData.append("aboutMe", data.aboutMe);
+            formData.append("avatarFile", data.avatarFile);
+
+            const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+            const res = await fetch(`${API_BASE}/api/auth/register`, {
+                method: "POST",
+                body: formData,
+                credentials: "include",
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error ?? `Registration failed: ${res.status}`);
+            }
+            u = await res.json();
+        } else {
+            u = await apiFetch<User>("/api/auth/register", {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+        }
         setUser(u);
     }
 

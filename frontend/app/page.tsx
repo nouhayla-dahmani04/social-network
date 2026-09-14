@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import UserSearchBar from "@/components/UserSearchBar";
 
 export default function Home() {
   const { user, loading, logout } = useAuth();
@@ -23,6 +24,7 @@ export default function Home() {
 
         {user ? (
           <div className="mt-6 w-full space-y-4">
+            <UserSearchBar />
             <div className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800/50 text-left space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Connected User</p>
               <p className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
@@ -35,12 +37,6 @@ export default function Home() {
               )}
             </div>
 
-            <button
-              onClick={() => logout()}
-              className="w-full rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-            >
-              Log out
-            </button>
             <div className="flex gap-3">
               <Link
                 href="/profile/me"

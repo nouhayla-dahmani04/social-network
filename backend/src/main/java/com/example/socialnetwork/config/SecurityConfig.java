@@ -33,7 +33,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/ws/**").permitAll()
+                // Autorise l'accès public à l'authentification, aux websockets et aux images uploadées (/uploads/**)
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout", "/ws/**", "/uploads/**").permitAll()
                 .requestMatchers("/api/auth/me").authenticated()
                 .anyRequest().authenticated()
             )

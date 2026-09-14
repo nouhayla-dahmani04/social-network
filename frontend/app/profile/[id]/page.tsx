@@ -1,11 +1,21 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { profileApi, Profile, FollowItem, UpdateProfileData } from "@/lib/profileApi";
 import FollowButton from "@/components/FollowButton";
 import FollowersListModal from "@/components/FollowersListModal";
+
+// Helper pour résoudre les URLs d'images (web ou uploads serveur)
+function getAvatarUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
+        return url;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+    return `${apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -20,6 +30,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<UpdateProfileData>({});
     const [saving, setSaving] = useState(false);
+
+    // États d'upload d'avatar
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // États de modale pour listes
     const [modalState, setModalState] = useState<{
@@ -58,7 +74,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 isPublic: data.isPublic,
             });
 
-            // Si c'est son propre profil privé, on charge le nombre de demandes en attente
             if (data.followStatus === "SELF" && !data.isPublic) {
                 profileApi.getPendingRequests()
                     .then((reqs) => setPendingRequestsCount(reqs.length))
@@ -68,6 +83,31 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
             setError((err as Error).message);
         } finally {
             setLoading(false);
+        }
+    }
+
+    // Gestion de l'upload d'un fichier image (Galerie / Explorateur ou Glisser-Déposer)
+    async function handleFileSelect(file: File) {
+        if (!file.type.startsWith("image/")) {
+            alert("Veuillez sélectionner un fichier image valide (JPEG, PNG, WEBP, GIF).");
+            return;
+        }
+
+        // Prévisualisation instantanée
+        const localPreview = URL.createObjectURL(file);
+        setPreviewAvatar(localPreview);
+        setUploadingAvatar(true);
+
+        try {
+            const updated = await profileApi.uploadAvatar(file);
+            setProfile(updated);
+            setEditForm((prev) => ({ ...prev, avatarUrl: updated.avatarUrl ?? "" }));
+            setPreviewAvatar(null);
+        } catch (err) {
+            alert("Erreur lors de l'upload de l'avatar : " + (err as Error).message);
+            setPreviewAvatar(null);
+        } finally {
+            setUploadingAvatar(false);
         }
     }
 
@@ -166,9 +206,23 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     }
 
     const isSelf = profile.followStatus === "SELF";
+    const currentAvatar = previewAvatar ?? getAvatarUrl(profile.avatarUrl);
 
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+            {/* Input fichier caché pour l'upload d'avatar */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        handleFileSelect(e.target.files[0]);
+                    }
+                }}
+            />
+
             <div className="max-w-3xl mx-auto space-y-6">
                 {/* Navigation */}
                 <div className="flex items-center justify-between">
@@ -185,11 +239,48 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                     <div className="px-6 pb-6 relative">
                         {/* Avatar & Actions */}
                         <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-16 mb-4 gap-4">
-                            <div className="w-28 h-28 rounded-full border-4 border-white bg-blue-100 text-blue-600 flex items-center justify-center text-3xl font-bold shadow-md overflow-hidden flex-shrink-0">
-                                {profile.avatarUrl ? (
-                                    <img src={profile.avatarUrl} alt={profile.firstName} className="w-full h-full object-cover" />
+                            {/* Zone Avatar avec Upload & Drag & Drop pour son propre profil */}
+                            <div
+                                className={`relative w-28 h-28 rounded-full border-4 border-white bg-blue-100 text-blue-600 flex items-center justify-center text-3xl font-bold shadow-md overflow-hidden flex-shrink-0 group ${
+                                    isSelf ? "cursor-pointer" : ""
+                                } ${isDragging ? "ring-4 ring-blue-400" : ""}`}
+                                onClick={() => isSelf && fileInputRef.current?.click()}
+                                onDragOver={(e) => {
+                                    if (isSelf) {
+                                        e.preventDefault();
+                                        setIsDragging(true);
+                                    }
+                                }}
+                                onDragLeave={() => setIsDragging(false)}
+                                onDrop={(e) => {
+                                    if (isSelf) {
+                                        e.preventDefault();
+                                        setIsDragging(false);
+                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                            handleFileSelect(e.dataTransfer.files[0]);
+                                        }
+                                    }
+                                }}
+                                title={isSelf ? "Cliquez ou glissez une photo pour changer d'avatar" : undefined}
+                            >
+                                {currentAvatar ? (
+                                    <img src={currentAvatar} alt={profile.firstName} className="w-full h-full object-cover" />
                                 ) : (
                                     `${profile.firstName[0]}${profile.lastName[0]}`
+                                )}
+
+                                {/* Overlay au survol / pendant l'upload */}
+                                {isSelf && (
+                                    <div className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {uploadingAvatar ? (
+                                            <span className="text-xs font-semibold animate-pulse">Upload...</span>
+                                        ) : (
+                                            <>
+                                                <span className="text-xl">📷</span>
+                                                <span className="text-[10px] font-medium">Changer</span>
+                                            </>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -204,6 +295,13 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                                 Demandes ({pendingRequestsCount})
                                             </button>
                                         )}
+                                        <button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={uploadingAvatar}
+                                            className="px-3.5 py-1.5 border border-gray-300 text-gray-700 text-xs font-medium rounded-full hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                                        >
+                                            📷 {uploadingAvatar ? "Upload..." : "Changer photo"}
+                                        </button>
                                         <button
                                             onClick={() => setIsEditing(!isEditing)}
                                             className="px-4 py-1.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-50 transition-colors"
@@ -278,17 +376,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                             className="mt-1 block w-full px-3 py-2 border rounded-lg text-sm border-gray-300"
                                         />
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700">URL de l'Avatar</label>
-                                    <input
-                                        type="url"
-                                        value={editForm.avatarUrl ?? ""}
-                                        onChange={(e) => setEditForm({ ...editForm, avatarUrl: e.target.value })}
-                                        className="mt-1 block w-full px-3 py-2 border rounded-lg text-sm border-gray-300"
-                                        placeholder="https://..."
-                                    />
                                 </div>
 
                                 <div>
@@ -374,7 +461,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                     </p>
                                 )}
 
-                                {/* Détails (visibles si canViewContent) */}
+                                {/* Données privées (visibles seulement si canViewContent) */}
                                 {profile.canViewContent && (
                                     <div className="flex flex-wrap gap-4 text-xs text-gray-500 pt-1">
                                         {profile.email && <div>✉️ {profile.email}</div>}
@@ -404,10 +491,10 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                     </div>
                 </div>
 
-                {/* Section Contenu / Posts */}
+                {/* Section Publications ou Écran de Verrouillage */}
                 {profile.canViewContent ? (
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 text-center text-gray-500 text-sm">
-                        📝 Les publications apparaîtront ici dès l'activation du module Posts.
+                        📝 Les publications de cet utilisateur apparaîtront ici dès l'activation du module Posts.
                     </div>
                 ) : (
                     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-center space-y-2">
@@ -434,4 +521,3 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         </div>
     );
 }
-

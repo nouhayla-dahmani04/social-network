@@ -6,13 +6,16 @@ import com.example.socialnetwork.dto.profile.UpdateProfileRequest;
 import com.example.socialnetwork.entity.User;
 import com.example.socialnetwork.repository.UserRepository;
 import com.example.socialnetwork.security.UserPrincipal;
+import com.example.socialnetwork.service.FileStorageService;
 import com.example.socialnetwork.service.ProfileService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -24,10 +27,25 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
-    public ProfileController(ProfileService profileService, UserRepository userRepository) {
+    public ProfileController(ProfileService profileService, UserRepository userRepository, FileStorageService fileStorageService) {
         this.profileService = profileService;
         this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
+    }
+
+    /**
+     * Uploader une photo de profil (Avatar) pour l'utilisateur connecté.
+     */
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProfileResponse> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        User currentUser = requireAuthenticatedUser();
+        String avatarUrl = fileStorageService.storeAvatar(file);
+        currentUser.setAvatarUrl(avatarUrl);
+        userRepository.save(currentUser);
+        ProfileResponse profile = profileService.getProfile(currentUser.getId(), currentUser);
+        return ResponseEntity.ok(profile);
     }
 
     /**

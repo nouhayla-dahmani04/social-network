@@ -3,6 +3,15 @@
 import Link from "next/link";
 import { FollowItem } from "@/lib/profileApi";
 
+function getAvatarUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
+        return url;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+    return `${apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 type FollowersListModalProps = {
     isOpen: boolean;
     title: string;
@@ -49,55 +58,58 @@ export default function FollowersListModal({
                             {isRequestsMode ? "Aucune demande en attente" : "Aucun utilisateur trouvé"}
                         </div>
                     ) : (
-                        items.map((item) => (
-                            <div
-                                key={item.followId ?? item.userId}
-                                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                                <Link
-                                    href={`/profile/${item.userId}`}
-                                    onClick={onClose}
-                                    className="flex items-center space-x-3 flex-1 min-w-0"
+                        items.map((item) => {
+                            const avatar = getAvatarUrl(item.avatarUrl);
+                            return (
+                                <div
+                                    key={item.followId ?? item.userId}
+                                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm overflow-hidden flex-shrink-0">
-                                        {item.avatarUrl ? (
-                                            <img
-                                                src={item.avatarUrl}
-                                                alt={item.firstName}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            `${item.firstName[0]}${item.lastName[0]}`
-                                        )}
-                                    </div>
-                                    <div className="truncate">
-                                        <p className="text-sm font-semibold text-gray-900 truncate">
-                                            {item.firstName} {item.lastName}
-                                        </p>
-                                        <p className="text-xs text-gray-500 truncate">
-                                            {item.nickname ? `@${item.nickname}` : item.email}
-                                        </p>
-                                    </div>
-                                </Link>
+                                    <Link
+                                        href={`/profile/${item.userId}`}
+                                        onClick={onClose}
+                                        className="flex items-center space-x-3 flex-1 min-w-0"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm overflow-hidden flex-shrink-0">
+                                            {avatar ? (
+                                                <img
+                                                    src={avatar}
+                                                    alt={item.firstName}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                `${item.firstName[0]}${item.lastName[0]}`
+                                            )}
+                                        </div>
+                                        <div className="truncate">
+                                            <p className="text-sm font-semibold text-gray-900 truncate">
+                                                {item.firstName} {item.lastName}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {item.nickname ? `@${item.nickname}` : item.email}
+                                            </p>
+                                        </div>
+                                    </Link>
 
-                                {isRequestsMode && item.followId && (
-                                    <div className="flex items-center space-x-2 flex-shrink-0 ml-3">
-                                        <button
-                                            onClick={() => onAccept && onAccept(item.followId!)}
-                                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
-                                        >
-                                            Accepter
-                                        </button>
-                                        <button
-                                            onClick={() => onReject && onReject(item.followId!)}
-                                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-md transition-colors"
-                                        >
-                                            Refuser
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                                    {isRequestsMode && item.followId && (
+                                        <div className="flex items-center space-x-2 flex-shrink-0 ml-3">
+                                            <button
+                                                onClick={() => onAccept && onAccept(item.followId!)}
+                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
+                                            >
+                                                Accepter
+                                            </button>
+                                            <button
+                                                onClick={() => onReject && onReject(item.followId!)}
+                                                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-md transition-colors"
+                                            >
+                                                Refuser
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })
                     )}
                 </div>
             </div>
