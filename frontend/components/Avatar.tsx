@@ -1,5 +1,19 @@
 "use client";
 
+export function resolveAvatarUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    if (
+        url.startsWith("http://") ||
+        url.startsWith("https://") ||
+        url.startsWith("data:") ||
+        url.startsWith("blob:")
+    ) {
+        return url;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+    return `${apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 type AvatarProps = {
     firstName?: string | null;
     lastName?: string | null;
@@ -18,6 +32,7 @@ export default function Avatar({
     className = "",
 }: AvatarProps) {
     const initials = `${(firstName?.[0] ?? "").toUpperCase()}${(lastName?.[0] ?? "").toUpperCase()}` || "?";
+    const resolvedSrc = resolveAvatarUrl(src);
 
     return (
         <div className={`relative flex-shrink-0 ${className}`} style={{ width: size, height: size }}>
@@ -25,9 +40,9 @@ export default function Avatar({
                 className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-indigo-100 font-semibold text-indigo-600"
                 style={{ fontSize: size * 0.38 }}
             >
-                {src ? (
+                {resolvedSrc ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={`${firstName ?? ""} ${lastName ?? ""}`.trim()} className="h-full w-full object-cover" />
+                    <img src={resolvedSrc} alt={`${firstName ?? ""} ${lastName ?? ""}`.trim()} className="h-full w-full object-cover" />
                 ) : (
                     initials
                 )}

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FileText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { profileApi } from "@/lib/profileApi";
 import { Post, postsApi } from "@/lib/postsApi";
 import PostComposer from "@/components/PostComposer";
 import PostCard from "@/components/PostCard";
+import UserSearchBar from "@/components/UserSearchBar";
 
 export default function FeedPage() {
     const { user } = useAuth();
@@ -45,6 +47,8 @@ export default function FeedPage() {
         <div className="space-y-4">
             <h1 className="text-xl font-bold text-slate-900">Fil d&apos;actualité</h1>
 
+            <UserSearchBar compact />
+
             <PostComposer onCreated={(created) => setPosts((prev) => [created, ...prev])} />
 
             {error && (
@@ -59,7 +63,7 @@ export default function FeedPage() {
                 </div>
             ) : posts.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                    <p className="text-3xl">📝</p>
+                    <FileText size={32} className="mx-auto text-slate-300" />
                     <p className="mt-2 text-sm font-medium text-slate-700">Aucune publication pour le moment.</p>
                     <p className="text-xs text-slate-400">
                         Publiez quelque chose ou suivez des amis pour voir leurs posts.

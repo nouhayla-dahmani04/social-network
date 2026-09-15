@@ -76,6 +76,7 @@ public class ProfileService {
      * Met à jour les informations du profil et le statut Public / Privé.
      */
     public ProfileResponse updateProfile(User currentUser, UpdateProfileRequest req) {
+        System.out.println("request body: ->>>>> " + req);
         if (req.firstName() != null && !req.firstName().isBlank()) {
             currentUser.setFirstName(req.firstName().trim());
         }

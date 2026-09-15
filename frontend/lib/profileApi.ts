@@ -51,6 +51,23 @@ export const profileApi = {
             body: JSON.stringify(data),
         }),
 
+    // Uploader un fichier image d'avatar depuis les fichiers locaux / galerie
+    uploadAvatar: async (file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+        const res = await fetch(`${API_BASE}/api/profile/avatar`, {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+        });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error ?? `Upload failed: ${res.status}`);
+        }
+        return res.json() as Promise<Profile>;
+    },
+
     // Follow / Unfollow un utilisateur
     toggleFollow: (userId: string) =>
         apiFetch<FollowItem>(`/api/profile/${userId}/follow`, {

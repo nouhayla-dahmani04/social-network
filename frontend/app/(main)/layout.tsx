@@ -8,7 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import RightPanel from "@/components/RightPanel";
 import Avatar from "@/components/Avatar";
 
-import { Home, User, Users, MessageCircle, Bell, LogOut, Sparkles } from "lucide-react";
+import { Home, User, Users, MessageCircle, Bell } from "lucide-react";
 
 const NAV_ITEMS = [
     { href: "/", label: "Fil d'actualité", icon: Home },

@@ -16,10 +16,10 @@ type PostCardProps = {
     onUpdated?: (post: Post) => void;
 };
 
-const privacyLabel: Record<string, string> = {
-    PUBLIC: "🌍 Public",
-    FOLLOWERS: "👥 Abonnés",
-    PRIVATE: "🔒 Privé",
+const privacyMeta: Record<string, { icon: React.ReactNode; label: string }> = {
+    PUBLIC: { icon: <Globe2 size={12} />, label: "Public" },
+    FOLLOWERS: { icon: <Users size={12} />, label: "Abonnés" },
+    PRIVATE: { icon: <Lock size={12} />, label: "Privé" },
 };
 
 export default function PostCard({ post, onDeleted, onUpdated }: PostCardProps) {
@@ -101,7 +101,10 @@ export default function PostCard({ post, onDeleted, onUpdated }: PostCardProps) 
                         </Link>
                         <span className="text-xs text-slate-400">· {formatRelativeTime(post.createdAt)}</span>
                     </div>
-                    <p className="text-[11px] text-slate-400">{privacyLabel[post.privacy] ?? post.privacy}</p>
+                    <p className="flex items-center gap-1 text-[11px] text-slate-400">
+                        {privacyMeta[post.privacy]?.icon}
+                        {privacyMeta[post.privacy]?.label ?? post.privacy}
+                    </p>
                 </div>
 
                 {isAuthor && !editing && (

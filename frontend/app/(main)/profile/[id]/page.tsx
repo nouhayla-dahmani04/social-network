@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { profileApi, Profile, FollowItem, UpdateProfileData } from "@/lib/profileApi";
 import { Post, postsApi } from "@/lib/postsApi";
@@ -10,7 +10,7 @@ import PostCard from "@/components/PostCard";
 import PostComposer from "@/components/PostComposer";
 import Avatar from "@/components/Avatar";
 
-import { FileText, Pencil, MessageCircle, Mail, Cake, Lock } from "lucide-react";
+import { ArrowLeft, Camera, Cake, FileText, Loader2, Lock, Mail, MessageCircle, Pencil } from "lucide-react";
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -26,6 +26,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<UpdateProfileData>({});
     const [saving, setSaving] = useState(false);
+
+    // Upload de l'avatar
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [modalState, setModalState] = useState<{
         isOpen: boolean;
@@ -83,6 +89,31 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
             active = false;
         };
     }, [userId]);
+
+    // Gestion de l'upload d'un fichier image (galerie ou glisser-déposer)
+    async function handleFileSelect(file: File) {
+        if (!file.type.startsWith("image/")) {
+            alert("Veuillez sélectionner un fichier image valide (JPEG, PNG, WEBP, GIF).");
+            return;
+        }
+
+        const localPreview = URL.createObjectURL(file);
+        setPreviewAvatar(localPreview);
+        setUploadingAvatar(true);
+
+        try {
+            const updated = await profileApi.uploadAvatar(file);
+            setProfile(updated);
+            setEditForm((prev) => ({ ...prev, avatarUrl: updated.avatarUrl ?? "" }));
+            setPreviewAvatar(null);
+        } catch (err) {
+            alert("Erreur lors de l'upload de l'avatar : " + (err as Error).message);
+            setPreviewAvatar(null);
+        } finally {
+            URL.revokeObjectURL(localPreview);
+            setUploadingAvatar(false);
+        }
+    }
 
     async function handleSaveProfile(e: React.FormEvent) {
         e.preventDefault();
@@ -163,8 +194,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         return (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
                 <p className="font-medium text-rose-600">{error ?? "Profil introuvable"}</p>
-                <Link href="/" className="mt-3 inline-block text-sm text-indigo-600 hover:underline">
-                    ← Retour à l&apos;accueil
+                <Link href="/" className="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
+                    <ArrowLeft size={15} /> Retour à l&apos;accueil
                 </Link>
             </div>
         );
@@ -174,21 +205,70 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
 
     return (
         <div className="space-y-6">
+            {/* Input fichier caché pour l'upload d'avatar */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                    e.target.value = "";
+                }}
+            />
+
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="h-32 bg-gradient-to-r from-indigo-500 via-violet-500 to-rose-500" />
 
                 <div className="relative px-6 pb-6">
                     <div className="mb-4 -mt-16 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                        <Avatar
-                            firstName={profile.firstName}
-                            lastName={profile.lastName}
-                            src={profile.avatarUrl}
-                            size={112}
-                            online
-                            className="rounded-full border-4 border-white shadow-md"
-                        />
+                        {/* Avatar + upload (clic / glisser-déposer) pour son propre profil */}
+                        <div
+                            className={`group relative h-28 w-28 ${isSelf ? "cursor-pointer" : ""} ${
+                                isDragging ? "rounded-full ring-4 ring-indigo-400" : ""
+                            }`}
+                            onClick={() => isSelf && fileInputRef.current?.click()}
+                            onDragOver={(e) => {
+                                if (isSelf) {
+                                    e.preventDefault();
+                                    setIsDragging(true);
+                                }
+                            }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={(e) => {
+                                if (isSelf) {
+                                    e.preventDefault();
+                                    setIsDragging(false);
+                                    const file = e.dataTransfer.files?.[0];
+                                    if (file) handleFileSelect(file);
+                                }
+                            }}
+                            title={isSelf ? "Cliquez ou glissez une photo pour changer d'avatar" : undefined}
+                        >
+                            <Avatar
+                                firstName={profile.firstName}
+                                lastName={profile.lastName}
+                                src={previewAvatar ?? profile.avatarUrl}
+                                size={112}
+                                online
+                                className="rounded-full border-4 border-white shadow-md"
+                            />
+                            {isSelf && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                    {uploadingAvatar ? (
+                                        <Loader2 size={22} className="animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Camera size={22} />
+                                            <span className="text-[10px] font-medium">Changer</span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             {isSelf ? (
                                 <>
                                     {!profile.isPublic && pendingRequestsCount > 0 && (
@@ -200,15 +280,22 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                         </button>
                                     )}
                                     <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploadingAvatar}
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                    >
+                                        <Camera size={16} /> {uploadingAvatar ? "Upload..." : "Changer photo"}
+                                    </button>
+                                    <button
                                         onClick={() => setIsEditing(!isEditing)}
-                                        className="rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                                     >
                                         {isEditing ? (
                                             "Annuler"
                                         ) : (
-                                            <span className="inline-flex items-center gap-1.5">
+                                            <>
                                                 <Pencil size={14} /> Modifier le profil
-                                            </span>
+                                            </>
                                         )}
                                     </button>
                                 </>
@@ -280,16 +367,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                 </Field>
                             </div>
 
-                            <Field label="URL de l'avatar">
-                                <input
-                                    type="url"
-                                    value={editForm.avatarUrl ?? ""}
-                                    onChange={(e) => setEditForm({ ...editForm, avatarUrl: e.target.value })}
-                                    className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                                    placeholder="https://..."
-                                />
-                            </Field>
-
                             <Field label="À propos de moi">
                                 <textarea
                                     value={editForm.aboutMe ?? ""}
@@ -313,12 +390,14 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                 <button
                                     type="button"
                                     onClick={() => setEditForm({ ...editForm, isPublic: !editForm.isPublic })}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isPublic ? "bg-indigo-600" : "bg-slate-300"
-                                        }`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                        editForm.isPublic ? "bg-indigo-600" : "bg-slate-300"
+                                    }`}
                                 >
                                     <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.isPublic ? "translate-x-6" : "translate-x-1"
-                                            }`}
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                            editForm.isPublic ? "translate-x-6" : "translate-x-1"
+                                        }`}
                                     />
                                 </button>
                             </div>
@@ -348,8 +427,9 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                                         {profile.firstName} {profile.lastName}
                                     </h1>
                                     <span
-                                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${profile.isPublic ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"
-                                            }`}
+                                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                            profile.isPublic ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"
+                                        }`}
                                     >
                                         {profile.isPublic ? "Public" : "Privé"}
                                     </span>
@@ -401,9 +481,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 <section className="space-y-4">
                     <h2 className="text-lg font-bold text-slate-900">Publications</h2>
 
-                    {isSelf && (
-                        <PostComposer onCreated={(created) => setPosts((prev) => [created, ...prev])} />
-                    )}
+                    {isSelf && <PostComposer onCreated={(created) => setPosts((prev) => [created, ...prev])} />}
 
                     {postsLoading ? (
                         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">

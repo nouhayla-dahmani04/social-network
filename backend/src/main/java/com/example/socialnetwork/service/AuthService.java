@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.regex.Pattern;
 
@@ -30,8 +31,12 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository;
+    private final FileStorageService fileStorageService;
 
-    public UserResponse register(RegisterRequest req, HttpServletRequest httpReq, HttpServletResponse httpRes) {
+    /**
+     * Inscription avec gestion d'un fichier d'avatar (MultipartFile).
+     */
+    public UserResponse register(RegisterRequest req, MultipartFile avatarFile, HttpServletRequest httpReq, HttpServletResponse httpRes) {
         validateRegisterRequest(req);
 
         String normalizedEmail = req.email().trim().toLowerCase();
@@ -45,7 +50,17 @@ public class AuthService {
         user.setFirstName(req.firstName().trim());
         user.setLastName(req.lastName().trim());
         user.setDateOfBirth(req.dateOfBirth().trim());
-        user.setAvatarUrl(req.avatarUrl() != null && !req.avatarUrl().isBlank() ? req.avatarUrl().trim() : null);
+
+        // Si une photo a été uploadée depuis la galerie/fichiers locaux, on la stocke
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            String storedAvatarUrl = fileStorageService.storeAvatar(avatarFile);
+            user.setAvatarUrl(storedAvatarUrl);
+        } else if (req.avatarUrl() != null && !req.avatarUrl().isBlank()) {
+            user.setAvatarUrl(req.avatarUrl().trim());
+        } else {
+            user.setAvatarUrl(null);
+        }
+
         user.setNickname(req.nickname() != null && !req.nickname().isBlank() ? req.nickname().trim() : null);
         user.setAboutMe(req.aboutMe() != null && !req.aboutMe().isBlank() ? req.aboutMe().trim() : null);
         user.setPublic(true);
@@ -54,6 +69,13 @@ public class AuthService {
         establishSession(httpReq, httpRes, savedUser);
 
         return UserResponse.fromEntity(savedUser);
+    }
+
+    /**
+     * Inscription standard (sans fichier physique) pour compatibilité totale.
+     */
+    public UserResponse register(RegisterRequest req, HttpServletRequest httpReq, HttpServletResponse httpRes) {
+        return register(req, null, httpReq, httpRes);
     }
 
     public UserResponse login(LoginRequest req, HttpServletRequest httpReq, HttpServletResponse httpRes) {
@@ -120,4 +142,3 @@ public class AuthService {
         }
     }
 }
-

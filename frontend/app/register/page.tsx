@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -8,16 +8,22 @@ import { useAuth } from "@/context/AuthContext";
 export default function RegisterPage() {
     const { register } = useAuth();
     const router = useRouter();
+
     const [formData, setFormData] = useState({
         email: "",
         password: "",
         firstName: "",
         lastName: "",
         dateOfBirth: "",
-        avatarUrl: "",
         nickname: "",
         aboutMe: "",
     });
+
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -25,12 +31,33 @@ export default function RegisterPage() {
         setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     }
 
+    function handleFileSelect(file: File) {
+        if (!file.type.startsWith("image/")) {
+            setError("Veuillez sélectionner un fichier image valide (JPEG, PNG, WEBP, GIF).");
+            return;
+        }
+        setError(null);
+        setAvatarFile(file);
+        setAvatarPreview(URL.createObjectURL(file));
+    }
+
+    function removeAvatar() {
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
         setLoading(true);
         try {
-            await register(formData);
+            await register({
+                ...formData,
+                avatarFile: avatarFile ?? undefined,
+            });
             router.push("/");
         } catch (err) {
             setError((err as Error).message);
@@ -58,6 +85,73 @@ export default function RegisterPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Zone d'Upload de l'Avatar (Galerie / Fichier local avec Prévisualisation) */}
+                    <div className="flex flex-col items-center justify-center pb-2">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    handleFileSelect(e.target.files[0]);
+                                }
+                            }}
+                        />
+
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                setIsDragging(true);
+                            }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                setIsDragging(false);
+                                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                    handleFileSelect(e.dataTransfer.files[0]);
+                                }
+                            }}
+                            className={`relative w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-colors ${
+                                isDragging
+                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                                    : "border-zinc-300 hover:border-zinc-400 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800"
+                            }`}
+                            title="Cliquez pour choisir une photo ou glissez-déposez-la"
+                        >
+                            {avatarPreview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={avatarPreview}
+                                    alt="Avatar preview"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="text-center p-2">
+                                    <span className="text-2xl">📷</span>
+                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                        Photo
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {avatarPreview ? (
+                            <button
+                                type="button"
+                                onClick={removeAvatar}
+                                className="mt-1 text-xs text-red-600 hover:underline"
+                            >
+                                Supprimer la photo
+                            </button>
+                        ) : (
+                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                Cliquez ou glissez une photo de profil (optionnel)
+                            </p>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -153,20 +247,6 @@ export default function RegisterPage() {
 
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                            Avatar URL (optional)
-                        </label>
-                        <input
-                            type="url"
-                            name="avatarUrl"
-                            placeholder="https://example.com/avatar.png"
-                            value={formData.avatarUrl}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-black focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                             About Me (optional)
                         </label>
                         <textarea
@@ -198,4 +278,3 @@ export default function RegisterPage() {
         </div>
     );
 }
-
