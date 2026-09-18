@@ -22,10 +22,12 @@ public class Event {
     @JoinColumn(name = "creator_id", nullable = false)
     private User creator;
 
+    @Column(nullable=false)
     private String title;
 
     private String description;
 
+    @Column(nullable=false)
     private String eventTime;
 
     @Column(name = "created_at", updatable = false, nullable = false)

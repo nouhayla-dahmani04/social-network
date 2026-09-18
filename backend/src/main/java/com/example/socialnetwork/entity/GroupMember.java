@@ -2,8 +2,14 @@ package com.example.socialnetwork.entity;
 
 import java.time.Instant;
 import java.util.UUID;
-
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.*;
+
+@Entity
+@Table(name = "group_members")
+@Getter
+@Setter
 
 public class GroupMember {
 
