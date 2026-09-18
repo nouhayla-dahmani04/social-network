@@ -9,7 +9,9 @@ import lombok.Setter;
 public class PostResponse {
 
     private String id;
-
+    //
+    private String groupId;
+    //
     private String content;
 
     private String imageUrl;
