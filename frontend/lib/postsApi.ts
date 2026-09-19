@@ -72,7 +72,32 @@ export const postsApi = {
             method: "POST",
             body: JSON.stringify({ content, imageUrl }),
         }),
+
+    uploadPostImage: (file: File) => uploadImage("/api/posts/image", file),
+
+    uploadGroupPostImage: (groupId: string, file: File) =>
+        uploadImage(`/api/groups/${groupId}/posts/image`, file),
 };
+
+async function uploadImage(path: string, file: File): Promise<string> {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+    });
+
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? `Upload failed: ${res.status}`);
+    }
+
+    const data = (await res.json()) as { imageUrl: string };
+    return data.imageUrl;
+}
 
 export function formatRelativeTime(iso: string): string {
     const date = new Date(iso);

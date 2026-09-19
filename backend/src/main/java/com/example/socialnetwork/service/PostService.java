@@ -25,14 +25,18 @@ public class PostService {
     private final FollowRepository followRepository;
     private final PostAllowedViewerRepository allowedViewerRepository;
     private final LikeRepository likeRepository;
+    private final GroupService groupService;
 
     public PostService(PostRepository postRepository,
             FollowRepository followRepository,
-            PostAllowedViewerRepository allowedViewerRepository, LikeRepository likeRepository) {
+            PostAllowedViewerRepository allowedViewerRepository,
+            LikeRepository likeRepository,
+            GroupService groupService) {
         this.postRepository = postRepository;
         this.followRepository = followRepository;
         this.allowedViewerRepository = allowedViewerRepository;
         this.likeRepository = likeRepository;
+        this.groupService = groupService;
     }
 
     public List<PostResponse> getUserPosts(String userId, User currentUser) {
@@ -41,6 +45,9 @@ public class PostService {
         List<PostResponse> visiblePosts = new ArrayList<>();
 
         for (Post post : allPosts) {
+            if (post.getGroupId() != null) {
+                continue; // les posts de groupe ne s'affichent pas dans le profil
+            }
             if (canViewPost(post, currentUser)) {
                 visiblePosts.add(toResponse(post, currentUser));
             }
@@ -50,6 +57,12 @@ public class PostService {
     }
 
     public boolean canViewPost(Post post, User currentUser) {
+
+        // Un post de groupe n'est visible que par les membres acceptés du groupe
+        if (post.getGroupId() != null) {
+            return currentUser != null
+                    && groupService.isAcceptedMember(post.getGroupId(), currentUser.getId());
+        }
 
         String authorId = post.getAuthor().getId();
 
@@ -97,6 +110,41 @@ public class PostService {
 
         Post savedPost = postRepository.findById(post.getId()).orElseThrow();
         return toResponse(savedPost, currentUser);
+    }
+
+    // Crée un post dans un groupe. Réservé aux membres acceptés du groupe.
+    public PostResponse createGroupPost(String groupId, User currentUser, CreatePostRequest req) {
+
+        if (!groupService.isAcceptedMember(groupId, currentUser.getId())) {
+            throw new AccessDeniedException("Tu n'es pas membre de ce groupe");
+        }
+
+        Post post = new Post();
+        post.setAuthor(currentUser);
+        post.setGroupId(groupId);
+        post.setContent(req.getContent());
+        post.setImageUrl(req.getImageUrl());
+        post.setPrivacy(PostPrivacy.PUBLIC);
+
+        post = postRepository.save(post);
+
+        return toResponse(post, currentUser);
+    }
+
+    // Liste les posts d'un groupe. Réservé aux membres acceptés du groupe.
+    public List<PostResponse> getGroupPosts(String groupId, User currentUser) {
+
+        if (!groupService.isAcceptedMember(groupId, currentUser.getId())) {
+            throw new AccessDeniedException("Tu n'es pas membre de ce groupe");
+        }
+
+        List<PostResponse> result = new ArrayList<>();
+
+        for (Post post : postRepository.findByGroupIdOrderByCreatedAtDesc(groupId)) {
+            result.add(toResponse(post, currentUser));
+        }
+
+        return result;
     }
 
     // Modifie un post existant. Seul l'auteur du post a le droit de le faire.
@@ -172,6 +220,7 @@ public class PostService {
     private PostResponse toResponse(Post post, User currentUser) {
         PostResponse response = new PostResponse();
         response.setId(post.getId());
+        response.setGroupId(post.getGroupId());
         response.setContent(post.getContent());
         response.setImageUrl(post.getImageUrl());
         response.setPrivacy(post.getPrivacy());

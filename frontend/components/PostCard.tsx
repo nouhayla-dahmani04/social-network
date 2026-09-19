@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Post, formatRelativeTime, postsApi } from "@/lib/postsApi";
 import { copyToClipboard } from "@/lib/clipboard";
-import Avatar from "./Avatar";
+import Avatar, { resolveAvatarUrl } from "./Avatar";
 import CommentSection from "./CommentSection";
 
 import { Globe2, Users, Lock, Heart, MessageCircle, Share2 } from "lucide-react";
@@ -165,7 +165,7 @@ export default function PostCard({ post, onDeleted, onUpdated }: PostCardProps) 
                 {!editing && post.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={post.imageUrl}
+                        src={resolveAvatarUrl(post.imageUrl) ?? undefined}
                         alt="Illustration de la publication"
                         className="mt-3 max-h-96 w-full rounded-xl object-cover"
                     />
