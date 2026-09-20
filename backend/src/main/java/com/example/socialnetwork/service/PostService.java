@@ -7,18 +7,21 @@ import com.example.socialnetwork.entity.Post;
 import com.example.socialnetwork.entity.PostAllowedViewer;
 import com.example.socialnetwork.entity.PostPrivacy;
 import com.example.socialnetwork.entity.User;
+import com.example.socialnetwork.repository.CommentRepository;
 import com.example.socialnetwork.repository.FollowRepository;
 import com.example.socialnetwork.repository.LikeRepository;
 import com.example.socialnetwork.repository.PostAllowedViewerRepository;
 import com.example.socialnetwork.repository.PostRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
+@Transactional
 public class PostService {
 
     private final PostRepository postRepository;
@@ -26,17 +29,20 @@ public class PostService {
     private final PostAllowedViewerRepository allowedViewerRepository;
     private final LikeRepository likeRepository;
     private final GroupService groupService;
+    private final CommentRepository commentRepository;
 
     public PostService(PostRepository postRepository,
             FollowRepository followRepository,
             PostAllowedViewerRepository allowedViewerRepository,
             LikeRepository likeRepository,
-            GroupService groupService) {
+            GroupService groupService,
+            CommentRepository commentRepository) {
         this.postRepository = postRepository;
         this.followRepository = followRepository;
         this.allowedViewerRepository = allowedViewerRepository;
         this.likeRepository = likeRepository;
         this.groupService = groupService;
+        this.commentRepository = commentRepository;
     }
 
     public List<PostResponse> getUserPosts(String userId, User currentUser) {
@@ -176,9 +182,11 @@ public class PostService {
 
         post = postRepository.save(post);
 
-        // Si la confidentialité devient PRIVATE (ou change de liste d'autorisés),
-        // on remet à jour la liste des viewers autorisés depuis zéro
-        if (post.getPrivacy() == PostPrivacy.PRIVATE) {
+        // Si le post est (ou devient) PRIVATE et que le client fournit une liste,
+        // on remet à jour les viewers autorisés depuis zéro.
+        // Si allowedViewerIds == null, on conserve la liste existante
+        // (permet de modifier le texte sans effacer les autorisations).
+        if (post.getPrivacy() == PostPrivacy.PRIVATE && req.getAllowedViewerIds() != null) {
             allowedViewerRepository.deleteByPostId(post.getId());
             saveAllowedViewers(post, req.getPrivacy(), req.getAllowedViewerIds());
         }
@@ -224,6 +232,12 @@ public class PostService {
         response.setContent(post.getContent());
         response.setImageUrl(post.getImageUrl());
         response.setPrivacy(post.getPrivacy());
+        if (post.getPrivacy() == PostPrivacy.PRIVATE) {
+            response.setAllowedViewerIds(
+                    allowedViewerRepository.findByPostId(post.getId()).stream()
+                            .map(PostAllowedViewer::getUserId)
+                            .toList());
+        }
         response.setCreatedAt(post.getCreatedAt());
         response.setAuthorId(post.getAuthor().getId());
         response.setAuthorFirstName(post.getAuthor().getFirstName());
@@ -231,6 +245,7 @@ public class PostService {
         response.setAuthorAvatarUrl(post.getAuthor().getAvatarUrl());
         response.setLikesCount(likeRepository.countByPostId(post.getId()));
         response.setLikedByMe(likeRepository.findByPostIdAndUserId(post.getId(), currentUser.getId()).isPresent());
+        response.setCommentsCount(commentRepository.countByPostId(post.getId()));
 
         return response;
     }

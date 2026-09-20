@@ -31,6 +31,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     const [busy, setBusy] = useState(false);
     const [eventModalOpen, setEventModalOpen] = useState(false);
     const [membersModalOpen, setMembersModalOpen] = useState(false);
+    const [tab, setTab] = useState<"posts" | "events">("posts");
 
     const isMember = group?.myStatus === "ACCEPTED";
     const isCreator = !!user && group?.creatorId === user.id;
@@ -177,14 +178,14 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
             </Link>
 
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="h-24 bg-gradient-to-r from-violet-500 to-indigo-600" />
+                <div className="h-24 bg-gradient-to-r from-violet-300 to-indigo-400" />
                 <div className="px-5 pb-5">
                     <div className="-mt-8 flex items-start gap-4">
                         <span className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-indigo-600 text-white shadow">
                             <Users size={26} />
                         </span>
                         <div className="min-w-0 flex-1 pt-4">
-                            <h1 className="text-xl font-bold text-slate-900">{group.title}</h1>
+                            <h1 className="-mt-3 text-xl font-bold text-slate-900">{group.title}</h1>
                             <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
                                 {isMember ? (
                                     <button
@@ -263,51 +264,75 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                         onInvited={() => {}}
                     />
 
-                    {/* Publications */}
-                    <section className="space-y-4">
-                        <h2 className="text-lg font-bold text-slate-900">Publications</h2>
-                        <GroupPostComposer groupId={groupId} onCreated={(p) => setPosts((prev) => [p, ...prev])} />
-                        {posts.length === 0 ? (
-                            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                                <FileText size={30} className="mx-auto text-slate-300" />
-                                <p className="mt-2 text-sm text-slate-500">Aucune publication dans ce groupe.</p>
-                            </div>
-                        ) : (
-                            posts.map((post) => (
-                                <PostCard
-                                    key={post.id}
-                                    post={post}
-                                    onDeleted={(pid) => setPosts((prev) => prev.filter((p) => p.id !== pid))}
-                                    onUpdated={(updated) =>
-                                        setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-                                    }
-                                />
-                            ))
-                        )}
-                    </section>
+                    {/* Onglets Publications / Événements */}
+                    <div className="flex items-center gap-2 border-b border-slate-200">
+                        <button
+                            onClick={() => setTab("posts")}
+                            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition ${
+                                tab === "posts"
+                                    ? "border-indigo-600 text-indigo-600"
+                                    : "border-transparent text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            Publications
+                        </button>
+                        <button
+                            onClick={() => setTab("events")}
+                            className={`-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition ${
+                                tab === "events"
+                                    ? "border-indigo-600 text-indigo-600"
+                                    : "border-transparent text-slate-500 hover:text-slate-800"
+                            }`}
+                        >
+                            Événements
+                        </button>
+                    </div>
 
-                    {/* Événements */}
-                    <section className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-900">Événements</h2>
-                            <button
-                                onClick={() => setEventModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                            >
-                                <CalendarPlus size={15} /> Créer un événement
-                            </button>
-                        </div>
-                        {events.length === 0 ? (
-                            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                                <CalendarPlus size={30} className="mx-auto text-slate-300" />
-                                <p className="mt-2 text-sm text-slate-500">Aucun événement pour le moment.</p>
+                    {tab === "events" && (
+                        <section className="space-y-4">
+                            <div className="flex items-center justify-end">
+                                <button
+                                    onClick={() => setEventModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                >
+                                    <CalendarPlus size={15} /> Créer un événement
+                                </button>
                             </div>
-                        ) : (
-                            events.map((event) => (
-                                <EventCard key={event.id} event={event} onRespond={handleRespondEvent} />
-                            ))
-                        )}
-                    </section>
+                            {events.length === 0 ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                                    <CalendarPlus size={30} className="mx-auto text-slate-300" />
+                                    <p className="mt-2 text-sm text-slate-500">Aucun événement pour le moment.</p>
+                                </div>
+                            ) : (
+                                events.map((event) => (
+                                    <EventCard key={event.id} event={event} onRespond={handleRespondEvent} />
+                                ))
+                            )}
+                        </section>
+                    )}
+
+                    {tab === "posts" && (
+                        <section className="space-y-4">
+                            <GroupPostComposer groupId={groupId} onCreated={(p) => setPosts((prev) => [p, ...prev])} />
+                            {posts.length === 0 ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                                    <FileText size={30} className="mx-auto text-slate-300" />
+                                    <p className="mt-2 text-sm text-slate-500">Aucune publication dans ce groupe.</p>
+                                </div>
+                            ) : (
+                                posts.map((post) => (
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        onDeleted={(pid) => setPosts((prev) => prev.filter((p) => p.id !== pid))}
+                                        onUpdated={(updated) =>
+                                            setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+                                        }
+                                    />
+                                ))
+                            )}
+                        </section>
+                    )}
 
                     {/* Demandes d'adhésion (créateur) */}
                     {isCreator && (

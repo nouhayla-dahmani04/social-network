@@ -7,12 +7,14 @@ export type Post = {
     content: string | null;
     imageUrl: string | null;
     privacy: PostPrivacy;
+    allowedViewerIds?: string[] | null;
     authorId: string;
     authorFirstName: string;
     authorLastName: string;
     authorAvatarUrl: string | null;
     likesCount: number;
     likedByMe: boolean;
+    commentsCount: number;
     createdAt: string;
 };
 
@@ -72,6 +74,9 @@ export const postsApi = {
             method: "POST",
             body: JSON.stringify({ content, imageUrl }),
         }),
+
+    deleteComment: (commentId: string) =>
+        apiFetch<void>(`/api/comments/${commentId}`, { method: "DELETE" }),
 
     uploadPostImage: (file: File) => uploadImage("/api/posts/image", file),
 

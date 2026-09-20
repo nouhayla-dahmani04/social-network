@@ -5,12 +5,14 @@ import { useAuth } from "@/context/AuthContext";
 import { Post, postsApi } from "@/lib/postsApi";
 import { groupsApi } from "@/lib/groupsApi";
 import Avatar, { resolveAvatarUrl } from "./Avatar";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, Smile, X, Loader2 } from "lucide-react";
 
 type GroupPostComposerProps = {
     groupId: string;
     onCreated: (post: Post) => void;
 };
+
+const MOODS = ["😊", "😄", "🔥", "❤️", "🎉", "🤔", "😎", "🥳"];
 
 export default function GroupPostComposer({ groupId, onCreated }: GroupPostComposerProps) {
     const { user } = useAuth();
@@ -18,6 +20,7 @@ export default function GroupPostComposer({ groupId, onCreated }: GroupPostCompo
     const [imageUrl, setImageUrl] = useState("");
     const [preview, setPreview] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [showMoods, setShowMoods] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,19 +122,45 @@ export default function GroupPostComposer({ groupId, onCreated }: GroupPostCompo
                 </div>
             )}
 
+            {showMoods && (
+                <div className="mt-3 flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                    {MOODS.map((mood) => (
+                        <button
+                            key={mood}
+                            type="button"
+                            onClick={() => setContent((c) => `${c}${mood}`)}
+                            className="rounded-lg px-2 py-1 text-lg transition hover:bg-white"
+                        >
+                            {mood}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {error && <p className="mt-2 text-xs text-rose-500">{error}</p>}
 
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
-                        preview ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                >
-                    <ImagePlus size={16} />
-                </button>
+                <div className="flex items-center gap-1">
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                            preview ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        <ImagePlus size={16} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowMoods((v) => !v)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                            showMoods ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        <Smile size={16} className="inline mr-1" /> Humeur
+                    </button>
+                </div>
 
                 <button
                     type="submit"

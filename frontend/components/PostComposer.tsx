@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Post, PostPrivacy, postsApi } from "@/lib/postsApi";
 import Avatar, { resolveAvatarUrl } from "./Avatar";
+import UserPicker, { PickedUser } from "./UserPicker";
 
 import { ImagePlus, Smile, X, Loader2 } from "lucide-react";
 
@@ -21,6 +22,7 @@ export default function PostComposer({ onCreated }: PostComposerProps) {
     const [uploading, setUploading] = useState(false);
     const [showMoods, setShowMoods] = useState(false);
     const [privacy, setPrivacy] = useState<PostPrivacy>("PUBLIC");
+    const [allowedViewers, setAllowedViewers] = useState<PickedUser[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,11 +67,13 @@ export default function PostComposer({ onCreated }: PostComposerProps) {
                 content: content.trim() || undefined,
                 imageUrl: imageUrl || undefined,
                 privacy,
+                allowedViewerIds: privacy === "PRIVATE" ? allowedViewers.map((v) => v.id) : undefined,
             });
             onCreated(created);
             setContent("");
             clearImage();
             setPrivacy("PUBLIC");
+            setAllowedViewers([]);
         } catch (err) {
             setError((err as Error).message);
         } finally {
@@ -139,6 +143,20 @@ export default function PostComposer({ onCreated }: PostComposerProps) {
                 </div>
             )}
 
+            {privacy === "PRIVATE" && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-xs font-medium text-slate-600">Choisir qui peut voir ce post</p>
+                    <UserPicker
+                        selected={allowedViewers}
+                        onChange={setAllowedViewers}
+                        placeholder="Rechercher un utilisateur à autoriser..."
+                    />
+                    <p className="mt-2 text-[11px] text-slate-400">
+                        Si personne n&apos;est sélectionné, seul vous verrez ce post.
+                    </p>
+                </div>
+            )}
+
             {error && <p className="mt-2 text-xs text-rose-500">{error}</p>}
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
@@ -169,6 +187,7 @@ export default function PostComposer({ onCreated }: PostComposerProps) {
                     >
                         <option value="PUBLIC">🌍 Public</option>
                         <option value="FOLLOWERS">👥 Abonnés</option>
+                        <option value="PRIVATE">🔒 Privé</option>
                     </select>
                 </div>
 

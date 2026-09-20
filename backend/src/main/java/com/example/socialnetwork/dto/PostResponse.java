@@ -4,6 +4,8 @@ import com.example.socialnetwork.entity.PostPrivacy;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class PostResponse {
@@ -18,6 +20,9 @@ public class PostResponse {
 
     private PostPrivacy privacy;
 
+    // Rempli uniquement si privacy == PRIVATE
+    private List<String> allowedViewerIds;
+
     private String authorId;
 
     private String authorFirstName;
@@ -29,6 +34,8 @@ public class PostResponse {
     private long likesCount;
     
     private boolean likedByMe;
+
+    private long commentsCount;
 
     private String createdAt;
 }
